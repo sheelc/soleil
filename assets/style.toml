@@ -1,0 +1,13 @@
+shadow = false
+borders = "simple"
+
+[colors]
+    view = "black"
+    primary = "blue"
+    secondary = "blue"
+    tertiary = "yellow"
+    background = ["black"]
+    highlight = "white"
+    highlight_inactive = "blue"
+    title_primary = "blue"
+    title_secondary = "blue"
