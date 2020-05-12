@@ -57,8 +57,8 @@ impl AppUi {
       .title("Recent Logs")
       .title_position(cursive::align::HAlign::Left);
     let resized_right_panel = ResizedView::new(
-      cursive::view::SizeConstraint::Full,
-      cursive::view::SizeConstraint::Full,
+      SizeConstraint::Full,
+      SizeConstraint::Full,
       right_panel,
     );
 
