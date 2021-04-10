@@ -1,10 +1,19 @@
-use cursive::view::{SizeConstraint, View, Nameable};
+use cursive::view::{Nameable, SizeConstraint, View};
 use cursive::views::{LinearLayout, PaddedView, Panel, ResizedView, ScrollView, SelectView};
 use cursive::Cursive;
 
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{Receiver, Sender};
 
+use crate::apps::AppActionCmd;
 use crate::apps::AppEvent;
+
+type AppId = String;
+
+#[derive(Debug)]
+pub enum UiEvent {
+  SelectApp(String),
+  AppAction(AppId, AppActionCmd),
+}
 
 pub struct Ui {
   siv: Cursive,
@@ -13,19 +22,22 @@ pub struct Ui {
 
 struct UiState {
   ui_events: Sender<UiEvent>,
-}
-
-#[derive(Debug)]
-pub enum UiEvent {
-  SelectApp(String),
+  selected_app_id: AppId,
 }
 
 impl Ui {
-    pub fn new(app_events: Receiver<AppEvent>, ui_events: Sender<UiEvent>) -> Ui {
-    let mut ui = Ui { siv: Cursive::default(), app_events };
+  pub fn new(app_events: Receiver<AppEvent>, ui_events: Sender<UiEvent>) -> Ui {
+    let mut ui = Ui {
+      siv: Cursive::default(),
+      app_events,
+    };
     let siv = &mut ui.siv;
 
-    siv.set_user_data(UiState { ui_events });
+    let selected_app_id = String::from("kafka");
+    siv.set_user_data(UiState {
+      ui_events,
+      selected_app_id,
+    });
     siv
       .load_toml(include_str!("../../assets/style.toml"))
       .unwrap();
@@ -38,11 +50,8 @@ impl Ui {
       .title("Recent Logs")
       .title_position(cursive::align::HAlign::Left)
       .with_name("log_panel");
-    let resized_right_panel = ResizedView::new(
-      SizeConstraint::Full,
-      SizeConstraint::Full,
-      right_panel,
-    );
+    let resized_right_panel =
+      ResizedView::new(SizeConstraint::Full, SizeConstraint::Full, right_panel);
 
     let layout = LinearLayout::horizontal()
       .child(panel)
@@ -60,12 +69,18 @@ impl Ui {
     while siv.is_running() {
       siv.step();
       let mut needs_refresh = false;
-      for m in self.app_events.try_iter() {
-        siv.call_on_name("log_panel", |view: &mut Panel<SelectView<i32>>| {
-          let AppEvent::SelectedApp(appid) = m;
-          view.set_title(appid);
-          needs_refresh = true;
-        });
+      for msg in self.app_events.try_iter() {
+        match msg {
+          AppEvent::SelectedApp(appid) => {
+            siv.call_on_name("log_panel", |view: &mut Panel<SelectView<i32>>| {
+              view.set_title(appid.clone());
+              needs_refresh = true;
+            });
+            siv.with_user_data(|state: &mut UiState| {
+              state.selected_app_id = appid;
+            });
+          }
+        }
       }
 
       if needs_refresh {
@@ -102,12 +117,23 @@ fn apps_view() -> Box<dyn View> {
 fn control_view() -> Box<dyn View> {
   let panel = Panel::new(
     SelectView::new()
-      .item("start", 1)
-      .item("stop", 1)
-      .item("restart", 1),
+      .item("Start", AppActionCmd::Start)
+      .item("Stop", AppActionCmd::Stop)
+      .item("Restart", AppActionCmd::Restart)
+      .on_submit(|siv: &mut Cursive, item: &AppActionCmd| {
+        siv.with_user_data(|state: &mut UiState| {
+          state
+            .ui_events
+            .send(UiEvent::AppAction(
+              state.selected_app_id.clone(),
+              item.clone(),
+            ))
+            .unwrap();
+        });
+      }),
   )
-    .title("Actions")
-    .title_position(cursive::align::HAlign::Left);
+  .title("Actions")
+  .title_position(cursive::align::HAlign::Left);
 
   Box::new(ResizedView::with_fixed_width(
     20,
