@@ -5,4 +5,4 @@ authors = ["Sheel Choksi"]
 edition = "2018"
 
 [dependencies]
-cursive = { version = "0.14", features = ["toml"] }
+cursive = { version = "0.16", features = ["toml"] }

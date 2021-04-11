@@ -1,6 +1,7 @@
+use cursive::backends::curses::n::Backend;
 use cursive::view::{Nameable, SizeConstraint, View};
 use cursive::views::{LinearLayout, PaddedView, Panel, ResizedView, ScrollView, SelectView};
-use cursive::Cursive;
+use cursive::{Cursive, CursiveRunner};
 
 use std::sync::mpsc::{Receiver, Sender};
 
@@ -16,7 +17,7 @@ pub enum UiEvent {
 }
 
 pub struct Ui {
-  siv: Cursive,
+  siv: CursiveRunner<Cursive>,
   app_events: Receiver<AppEvent>,
 }
 
@@ -28,7 +29,7 @@ struct UiState {
 impl Ui {
   pub fn new(app_events: Receiver<AppEvent>, ui_events: Sender<UiEvent>) -> Ui {
     let mut ui = Ui {
-      siv: Cursive::default(),
+      siv: Cursive::default().into_runner(Backend::init().unwrap()),
       app_events,
     };
     let siv = &mut ui.siv;
