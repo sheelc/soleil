@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use toml;
 
+pub type AppId = String;
+
 #[derive(Deserialize)]
 struct Config {
   apps: Vec<AppConfig>,
@@ -21,7 +23,7 @@ pub struct AppsConfig {
 
 #[derive(Debug, Clone)]
 pub struct AppNotFoundError {
-  appid: String,
+  appid: AppId,
 }
 
 impl fmt::Display for AppNotFoundError {

@@ -6,9 +6,7 @@ use cursive::{Cursive, CursiveRunner};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 
-use crate::apps::{AppActionCmd, AppEvent, AppsConfig};
-
-type AppId = String;
+use crate::apps::{AppActionCmd, AppEvent, AppId, AppsConfig};
 
 #[derive(Debug)]
 pub enum UiEvent {
