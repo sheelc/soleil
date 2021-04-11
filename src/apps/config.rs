@@ -14,7 +14,8 @@ struct Config {
 #[derive(Deserialize)]
 pub struct AppConfig {
   pub name: String,
-  pub start_command: String,
+  pub program: String,
+  pub program_args: Vec<String>,
 }
 
 pub struct AppsConfig {
@@ -41,15 +42,18 @@ impl AppsConfig {
       r##"
         [[apps]]
         name = "kafka"
-        start_command = "echo kafka"
+        program = "echo"
+        program_args = ["kafka echo going here"]
 
         [[apps]]
         name = "zookeeper"
-        start_command = "echo zookeeper"
+        program = "echo"
+        program_args = ["zookeeper"]
 
         [[apps]]
         name = "postgres"
-        start_command = "echo postgres"
+        program = "echo"
+        program_args = ["postgres"]
     "##,
     )
     .unwrap();
@@ -61,13 +65,15 @@ impl AppsConfig {
     &self.config.apps
   }
 
-  pub fn app_config_from_id(&self, appid: String) -> Result<&AppConfig, AppNotFoundError> {
+  pub fn app_config_from_id(&self, appid: &str) -> Result<&AppConfig, AppNotFoundError> {
     for app in self.apps().iter() {
       if app.name == appid {
         return Ok(app);
       }
     }
 
-    Err(AppNotFoundError { appid })
+    Err(AppNotFoundError {
+      appid: appid.to_string(),
+    })
   }
 }

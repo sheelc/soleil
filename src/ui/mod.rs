@@ -1,6 +1,8 @@
 use cursive::backends::curses::n::Backend;
 use cursive::view::{Nameable, SizeConstraint, View};
-use cursive::views::{LinearLayout, PaddedView, Panel, ResizedView, ScrollView, SelectView};
+use cursive::views::{
+  LinearLayout, PaddedView, Panel, ResizedView, ScrollView, SelectView, TextArea,
+};
 use cursive::{Cursive, CursiveRunner};
 
 use std::sync::mpsc::{Receiver, Sender};
@@ -51,10 +53,14 @@ impl Ui {
       .child(apps_view(&ui.apps_config))
       .child(control_view());
 
-    let right_panel = Panel::new(SelectView::new().item("A", 2))
-      .title("Recent Logs")
-      .title_position(cursive::align::HAlign::Left)
-      .with_name("log_panel");
+    let right_panel = Panel::new(
+      TextArea::new()
+        .disabled()
+        .content("Log lines here\nnewline"),
+    )
+    .title("Recent Logs")
+    .title_position(cursive::align::HAlign::Left)
+    .with_name("log_panel");
     let resized_right_panel =
       ResizedView::new(SizeConstraint::Full, SizeConstraint::Full, right_panel);
 
@@ -78,7 +84,7 @@ impl Ui {
         match msg {
           AppEvent::SelectedApp(appid) => {
             siv.call_on_name("log_panel", |view: &mut Panel<SelectView<i32>>| {
-              view.set_title(appid.clone());
+              view.set_title(&appid);
               needs_refresh = true;
             });
             siv.with_user_data(|state: &mut UiState| {
