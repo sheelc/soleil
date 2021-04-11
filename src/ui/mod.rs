@@ -4,9 +4,9 @@ use cursive::views::{LinearLayout, PaddedView, Panel, ResizedView, ScrollView, S
 use cursive::{Cursive, CursiveRunner};
 
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 
-use crate::apps::AppActionCmd;
-use crate::apps::AppEvent;
+use crate::apps::{AppActionCmd, AppEvent, AppsConfig};
 
 type AppId = String;
 
@@ -18,6 +18,7 @@ pub enum UiEvent {
 
 pub struct Ui {
   siv: CursiveRunner<Cursive>,
+  apps_config: Arc<AppsConfig>,
   app_events: Receiver<AppEvent>,
 }
 
@@ -27,9 +28,14 @@ struct UiState {
 }
 
 impl Ui {
-  pub fn new(app_events: Receiver<AppEvent>, ui_events: Sender<UiEvent>) -> Ui {
+  pub fn new(
+    apps_config: Arc<AppsConfig>,
+    app_events: Receiver<AppEvent>,
+    ui_events: Sender<UiEvent>,
+  ) -> Ui {
     let mut ui = Ui {
       siv: Cursive::default().into_runner(Backend::init().unwrap()),
+      apps_config,
       app_events,
     };
     let siv = &mut ui.siv;
@@ -44,7 +50,7 @@ impl Ui {
       .unwrap();
 
     let panel = LinearLayout::vertical()
-      .child(apps_view())
+      .child(apps_view(&ui.apps_config))
       .child(control_view());
 
     let right_panel = Panel::new(SelectView::new().item("A", 2))
@@ -91,18 +97,18 @@ impl Ui {
   }
 }
 
-fn apps_view() -> Box<dyn View> {
-  let apps_view = SelectView::new()
-    .item("kafka", "kafka")
-    .item("zookeeper", "zookeeper")
-    .item("postgres", "postgres")
-    .item("elasticsearch", "elasticsearch")
-    .autojump()
-    .on_select(|siv, item| {
-      siv.with_user_data(|state: &mut UiState| {
-        state.ui_events.send(UiEvent::SelectApp(item.to_string()))
-      });
+fn apps_view(apps_config: &Arc<AppsConfig>) -> Box<dyn View> {
+  let mut apps_view = SelectView::new();
+
+  for app in apps_config.apps().iter() {
+    apps_view = apps_view.item(app.name.clone(), app.name.clone());
+  }
+
+  apps_view = apps_view.autojump().on_select(|siv, item| {
+    siv.with_user_data(|state: &mut UiState| {
+      state.ui_events.send(UiEvent::SelectApp(item.to_string()))
     });
+  });
 
   let panel = Panel::new(ScrollView::new(apps_view))
     .title("Apps")
